@@ -1,0 +1,43 @@
+exec_once:
+ files:
+  /etc/apache2/sites-enabled/phpbb.conf:
+    name: phpbb.conf
+    path: /etc/apache2/sites-enabled/
+    mode: "0644"
+    owner: root
+    group: root
+    content: |
+      <VirtualHost *:80>
+        DocumentRoot /var/www/html/phpbb
+        <Directory /var/www/html/phpbb>
+          AllowOverride All
+          Order Allow,Deny
+          Allow from All
+        </Directory>
+
+        CustomLog /var/log/apache2/access.log combined
+        ErrorLog /var/log/apache2/error.log
+      </VirtualHost>
+ execs:
+  Remove default apache config file:
+   name: Remove default apache config file
+   command: |
+     rm -f /etc/apache2/sites-enabled/000-default.conf
+  Get phpbb source:
+   name: Get phpbb source
+   command: |
+     wget -qcO- https://www.phpbb.com/files/release/phpBB-3.2.2.tar.bz2  | tar xvj  -C . --strip 1
+  Run composer install:
+   name: Run composer install
+   command: |
+     #!/usr/bin/env bash
+     export COMPOSER_HOME=/usr/local/bin/.composer 
+     /usr/local/bin/composer install --no-interaction
+post_app_deploy:
+ execs:
+  Restart apache:
+   name: Restart apache
+   command: |
+     #!/usr/bin/env bash
+     chown -RL www-data:www-data /var/www/html/phpbb
+     service apache2 restart
